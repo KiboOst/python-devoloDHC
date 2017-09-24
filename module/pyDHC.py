@@ -71,6 +71,24 @@ class pyDHC():
 
 		return {'result': infos}
 	#
+	def getNumStats(self): #@return['result'] array containing number of devices, rules, etc...
+		if len(self._AllRules) == 0: self.getRules()
+		if len(self._AllTimers) == 0: self.getTimers()
+		if len(self._AllScenes) == 0: self.getScenes()
+		if len(self._AllMessages) == 0: self.getMessages()
+
+		report = {
+					'Devices'   : len(self._AllDevices),
+					'Rules'     : len(self._AllRules),
+					'Timers'    : len(self._AllTimers),
+					'Scenes'    : len(self._AllScenes),
+					'Groups'    : len(self._AllGroups),
+					'Messages'  : len(self._AllMessages),
+					'Zones'     : len(self._AllZones)
+					}
+		return {'result': report}
+	#
+
 
 	#______________________IS:
 	def isRuleActive(self, rule): #@rule name | @return['result'] string active/inactive
@@ -91,7 +109,7 @@ class pyDHC():
 
 		return self.isRuleActive(timer)
 	#
-	def isDeviceOn(self, device): #@device name | @return['result'] string on/off
+	def isDeviceOn(self, device, switch=None): #@device name | @return['result'] string on/off
 		if type(device) == str:
 			device = self.getDeviceByName(device)
 			if 'error' in device: return device
@@ -102,14 +120,46 @@ class pyDHC():
 		for sensor in sensors:
 			sensorType = self.getSensorType(sensor)
 			if sensorType in self._SensorsOnOff:
-				answer = self.fetchItems([sensor])
-				if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
-				try:
-					state = answer['result']['items'][0]['properties']['state']
-					isOn = 'on' if state > 0 else 'off'
-					return {'result':isOn}
-				except:
-					pass
+				#check qubino 2 relay:
+				if switch != None:
+					thisSwitch = sensor[-2:]
+					#several switches detected?
+					if thisSwitch != '#1' and thisSwitch != '#2': return {'result': None, 'error':'This switch does not seem to have several contacts'}
+					#get the other switch:
+					if thisSwitch == '#1': otherSensor = sensor.replace('#1', '#2')
+					if thisSwitch == '#2': otherSensor = sensor.replace('#2', '#1')
+					#so, which switch(es) to fetch:
+					if switch == 'All':
+						toFetch = [sensor, otherSensor]
+						answer = self.fetchItems(toFetch)
+						if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
+						state1 = answer['result']['items'][0]['properties']['state']
+						state2 = answer['result']['items'][1]['properties']['state']
+						isOn1 = 'on' if state1 > 0 else 'off'
+						isOn2 = 'on' if state2 > 0 else 'off'
+						return {'result':[isOn1, isOn2]}
+					if (switch == 1 and thisSwitch == '#1') or (switch == 2 and thisSwitch == '#2'):
+						toFetch = [sensor]
+					else:
+						toFetch = [otherSensor]
+
+					answer = self.fetchItems(toFetch)
+					if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
+					try:
+						state = answer['result']['items'][0]['properties']['state']
+						isOn = 'on' if state > 0 else 'off'
+						return {'result':isOn}
+					except:
+						pass
+				else: #single sensor request
+					answer = self.fetchItems([sensor])
+					if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
+					try:
+						state = answer['result']['items'][0]['properties']['state']
+						isOn = 'on' if state > 0 else 'off'
+						return {'result':isOn}
+					except:
+						pass
 		return {'result':None, 'error':'No supported sensor for this device'}
 	#
 
@@ -358,7 +408,6 @@ class pyDHC():
 			return {'result':datasArray}
 		except:
 			return {'result':datasArray, 'error': 'Unable to write file!'}
-
 	#
 	def getLogConsumption(self, filePath='/', dateStart=None, dateEnd=None): #@log file path | @return['result'] array, @return['error'] if can't read file
 		dir = os.path.dirname(__file__)
@@ -428,7 +477,7 @@ class pyDHC():
 		if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
 		return {'result':answer}
 	#
-	def turnDeviceOnOff(self, device, state): #@device name | @return['result'] central answer, @return['error'] if any
+	def turnDeviceOnOff(self, device, state, switch=None): #@device name | @return['result'] central answer, @return['error'] if any
 		if type(device) == str:
 			device = self.getDeviceByName(device)
 			if 'error' in device: return device
@@ -441,9 +490,30 @@ class pyDHC():
 			sensorType = self.getSensorType(sensor)
 			if sensorType in self._SensorsOnOff:
 				operation = 'turnOff' if state == 0 else 'turnOn'
-				answer = self.invokeOperation(sensor, operation)
-				if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
-				else: return {'result':True}
+
+				#check qubino 2 relay:
+				if switch != None:
+					thisSwitch = sensor[-2:]
+					#several switches detected?
+					if thisSwitch != '#1' and thisSwitch != '#2': return {'result': None, 'error':'This switch does not seem to have several contacts'}
+					#get the other switch:
+					if thisSwitch == '#1': otherSensor = sensor.replace('#1', '#2')
+					if thisSwitch == '#2': otherSensor = sensor.replace('#2', '#1')
+					#so, which switch(es) to activate:
+					if switch == 'All':
+						answer = self.invokeOperation(sensor, operation)
+						if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
+						answer = self.invokeOperation(otherSensor, operation)
+						if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
+						return {'result':True}
+					if (switch == 1 and thisSwitch == '#1') or (switch == 2 and thisSwitch == '#2'):
+						answer = self.invokeOperation(sensor, operation)
+						if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
+						return {'result':True}
+				else: #single sensor request
+					answer = self.invokeOperation(sensor, operation)
+					if 'error' in answer: return {'result': None, 'error':answer['error']['message']}
+					else: return {'result':True}
 
 			if sensorType in self._SensorsSend:
 				operation = 'send'
@@ -826,7 +896,7 @@ class pyDHC():
 
 	#functions authorization=============================================
 	def __init__(self, login='', password='', gateIdx=0):
-		self._version = 0.9
+		self._version = 1.0
 		self.error = None
 		self._userInfos = None
 		self._centralInfos = None
@@ -909,7 +979,7 @@ class pyDHC():
 									'LastActivity'              :['lastActivityTime'],
 									'WarningBinaryFI'           :['sensorType', 'state', 'type'],
 									'VoltageMultiLevelSensor'   :['sensorType', 'value' ],
-									};
+									}
 
 		if self.connect() == True:
 			self.getDevices()
@@ -983,3 +1053,9 @@ class pyDHC():
 		return False
 	#
 #pyDHC]
+
+def main():
+	pass
+
+if __name__ == "__main__":
+   main()
