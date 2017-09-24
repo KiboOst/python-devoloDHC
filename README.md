@@ -7,21 +7,25 @@
 This python API allows you to control your Devolo Home Control devices.
 The following devices are currently supported:
 
-- Smart Metering Plug (get/set)
-- Wall Switch / Key Fob (get/set)
-- Siren (get/set)
-- http devices (get/set)
-- Room Thermostat / Radiator Thermostat(valve) (get/set)
-- Flood Sensor (get)
-- Humidity Sensor (get)
-- Motion Sensor (get)
-- Door/Window Contact (get)
+- Devolo Smart Metering Plug (get/set)
+- Devolo Wall Switch / Devolo Key Fob (get/set)
+- Devolo Siren (get/set)
+- Devolo Room Thermostat / Radiator Thermostat(valve) (get/set)
+- Devolo Flood Sensor (get)
+- Devolo Humidity Sensor (get)
+- Devolo Motion Sensor (get)
+- Devolo Door/Window Contact (get)
+- http devices (get/set)<br /><br /> 
 - Scenes (get/set)
 - Groups (get/set)
 - Timers (get/set)
 - Rules (get/set)
-- Messages (get/set)
-- Qubino / Devolo "Flush Shutter" ZMNHCD1 (get/set)
+- Messages (get/set)<br /><br /> 
+- Qubino "Flush Shutter" ZMNHCD1 (get/set)
+- Qubino "Flush 1D Relay" ZMNHND1 (get/set)
+- Qubino "Flush 2 Relay" ZMNHBD1 (get/set one or both contacts)
+- Qubino "Flush Dimmer" ZMNHDD1 (get/set/dim)<br /><br /> 
+- Busch-Jaeger Duro 2000 - ZME_05461 (get/set) 
 
 Changing settings will appear in Devolo web interface / Apps daily diary with your account as usual.
 
@@ -106,6 +110,17 @@ pp.pprint(state)
 state = DHC.isDeviceOn("My Wall Plug")
 pp.pprint(state)
 
+#Check for devices with 2 relays (eg. Qubino Flush 2 Relay ZMNHBD1) is on (0=off, 1=on)
+#contact 1
+state = DHC.isDeviceOn("myRelay", 1)
+pp.pprint(state['result'])
+#contact 2
+state = DHC.isDeviceOn("myRelay", 2)
+pp.pprint(state['result'])
+#all contacts
+state = DHC.isDeviceOn("myRelay", all)
+pp.pprint(state['result'])
+
 #check a device battery level:
 batteryLevel = DHC.getDeviceBattery('My Motion Sensor')
 pp.pprint(batteryLevel)
@@ -160,6 +175,14 @@ url = DHC.getMessageData('MyAlert')
 dev = DHC.turnDeviceOnOff("My Room wallPlug", 1)
 pp.pprint(dev)
 
+#For devices with 2 relays as Qubino Flush 2 Relay ZMNHBD1 (device name, state, contact):
+#contact 1 on
+DHC.turnDeviceOnOff("myRelay", 1, 1)
+#contact 2 on
+DHC.turnDeviceOnOff("myRelay", 1, 2)
+#all contacts on
+DHC.turnDeviceOnOff("myRelay", 1, "All")
+
 #TURN GROUP ON(1) or OFF(0):
 DHC.turnGroupOnOff("My Plugs Group", 1)
 
@@ -183,6 +206,9 @@ DHC.setDeviceValue('My Devolo Siren', 5)
 
 #SET SHUTTER OPENING:
 DHC.setDeviceValue('qubShutter', 50)
+
+#SET DIMMER VALUE:
+DHC.setDeviceValue('qubDimmer', 50)
 
 #PRESS REMOTE SWITCH KEY OR KEY FOB KEY:
 DHC.pressDeviceKey('MySwitch', 3)
@@ -232,6 +258,12 @@ pp.pprint(help)
 <img align="right" src="/readmeAssets/changes.png" width="48">
 
 ## Version history
+
+#### v 1.0 (2017-09-24)
+- New: getNumStats() report number of devices, rules, timers, scenes, groups, zones, messages
+- Enhanced: Qubino Flush 2 Relay ZMNHBD1 support<br />
+DHC.turnDeviceOnOff('my2relay', 1, 'All') //support 1, 2, 'All' for Q1, Q2, both<br />
+DHC.isDeviceOn('my2relay', 1) //support 1, 2, 'All' for Q1, Q2, both
 
 #### v 0.9 (2017-06-12)
 - First public version
