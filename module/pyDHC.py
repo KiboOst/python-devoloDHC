@@ -4,16 +4,25 @@
 import sys
 import os
 
-import urllib2
-import urllib
-from cookielib import CookieJar, LWPCookieJar
-
 import json
 from collections import OrderedDict
 import base64
 
 import datetime
 from time import gmtime, strftime
+
+import urllib
+
+if sys.version_info[0] == 2:
+	import urllib2
+	requestUrl = urllib2
+	parseUrl = urllib
+	from cookielib import CookieJar, LWPCookieJar
+else:
+	import urllib.request
+	requestUrl = urllib.request
+	parseUrl = urllib.parse
+	from http.cookiejar import CookieJar, LWPCookieJar
 
 """
 All functions return an array containing 'result', and 'error' if there is a problem.
@@ -180,7 +189,7 @@ class pyDHC():
 			if param!=None:
 				answer = self.fetchItems([sensor])
 				if 'error' in answer: return {'result':None, 'error':answer['error']['message']}
-				if DebugReport: print answer
+				if DebugReport: print(answer)
 				jsonSensor = {'sensorType': sensorType}
 				for key in param:
 					value = answer['result']['items'][0]['properties'][key]
@@ -190,8 +199,8 @@ class pyDHC():
 				states.append(jsonSensor)
 			elif not sensorType in self._SensorsNoValues: #Unknown, unsupported sensor!
 				answer = self.fetchItems([sensor])
-				print "DEBUG - UNKNOWN PARAM - Please help and report this message on https://github.com/KiboOst/pyDHC or email it to "+base64.b64decode('a2lib29zdEBmcmVlLmZy')
-				print answer
+				print("DEBUG - UNKNOWN PARAM - Please help and report this message on https://github.com/KiboOst/pyDHC or email it to "+base64.b64decode('a2lib29zdEBmcmVlLmZy'))
+				print(answer)
 
 		return {'result':states}
 	#
@@ -856,7 +865,7 @@ class pyDHC():
 	#______________________calling functions
 	def request(self, method, host, path, jsonString=None, postinfo=None): #standard function handling all get/post request with curl | return string
 		if self._reqHdl == None:
-			self._reqHdl = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookieJar))
+			self._reqHdl = requestUrl.build_opener(requestUrl.HTTPCookieProcessor(self.cookieJar))
 			self._reqHdl.addheaders = [('User-agent', 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:51.0) Gecko/20100101 Firefox/51.0')]
 
 		url = host+'/'+path
@@ -867,10 +876,12 @@ class pyDHC():
 		if jsonString != None:
 			jsonString = jsonString.replace('"jsonrpc":"2.0",', '"jsonrpc":"2.0", "id":'+str(self._POSTid)+',')
 			self._POSTid += 1
+			if sys.version_info[0] == 3: jsonString = jsonString.encode()
 			answer = self._reqHdl.open(url, jsonString, timeout = 3)
 
 		if postinfo != None:
-			data = urllib.urlencode(postinfo)
+			data = parseUrl.urlencode(postinfo)
+			if sys.version_info[0] == 3: data = data.encode()
 			answer = self._reqHdl.open(url, data, timeout = 3)
 
 		self.cookieJar.save(self._cookFile, ignore_discard=True)
@@ -896,7 +907,7 @@ class pyDHC():
 
 	#functions authorization=============================================
 	def __init__(self, login='', password='', gateIdx=0):
-		self._version = 1.0
+		self._version = 1.3
 		self.error = None
 		self._userInfos = None
 		self._centralInfos = None
@@ -992,6 +1003,7 @@ class pyDHC():
 		#___________get CSRF_______________________________________________________
 		answer = self.request('GET', self._authUrl, self._lang)
 		html = answer.read()
+		if sys.version_info[0] == 3: html = html.decode()
 		lines = html.split('\n')
 		csrf = None
 		for line in lines:
