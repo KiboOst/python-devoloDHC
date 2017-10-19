@@ -47,7 +47,7 @@ This API is reverse-engineered, provided for research and development for intero
 <img align="right" src="/readmeAssets/requirements.png" width="48">
 
 ## Requirements
-- Python 2.7.11+
+- Python 2.7.11+ / Python 3+
 - The API require internet access (it will authenticate against Devolo servers).
 
 [&#8657;](#python-devolodhc)
@@ -258,6 +258,9 @@ pp.pprint(help)
 <img align="right" src="/readmeAssets/changes.png" width="48">
 
 ## Version history
+
+#### v 1.3 (2017-10-19)
+- Now support Python3! Same module will check your Python version and work on both 2.7/3!
 
 #### v 1.0 (2017-09-24)
 - New: getNumStats() report number of devices, rules, timers, scenes, groups, zones, messages
