@@ -69,7 +69,7 @@ sys.path.append(r'C:\path\to\api')
 from pyDHC import pyDHC
 
 DHC = pyDHC('login', 'password')
-if DHC.error: print DHC.error
+if DHC.error: print(DHC.error)
 ```
 
 If you have several Central Units, or keep the demo central on your *mydevolo* page, you can choose which to connect to:
@@ -77,7 +77,7 @@ If you have several Central Units, or keep the demo central on your *mydevolo* p
 ```python
 #(login | password | which central, default 0)
 DHC = pyDHC('login', 'password', 1)
-if DHC.error: print DHC.error
+if DHC.error: print(DHC.error)
 ```
 
 Let the fun begin:
@@ -245,7 +245,11 @@ pp.pprint(stats)
 ```
 Of course, it needs a valid previously saved log file by the api. You can provide no dates (full log), or only one (set first as null if needed). Just respect day.month.year (php 'd.m.Y').
 
-[&#8657;](#php-devolodhc)
+For visual logs feedback with php script, have a look [here](https://github.com/KiboOst/php-devoloDHC/tree/master/ExtendedLogs)
+
+<p align="center"><img width="350" src="https://github.com/KiboOst/php-devoloDHC/blob/master/ExtendedLogs/DHClogs.jpg"></p>
+
+[&#8657;](#python-devolodhc)
 #### Unsupported device
 
 If you have unsupported device, you can call special function with this device and post the return in a new issue.
