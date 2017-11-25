@@ -321,20 +321,19 @@ class pyDHC():
 			if 'timeOfDay' in item:
 				timesOfDay = item['timeOfDay']
 
-			if device['model'] in 'Door/Window:Sensor':
+			if 'Door/Window:Sensor' in device['model']:
 				if sensor in 'BinarySensor:hdm': sensor = 'opened'
 				if sensor in '#MultilevelSensor(1)': sensor = 'temperature'
 				if sensor in '#MultilevelSensor(3)': sensor = 'light'
-			if device['model'] in 'Motion:Sensor':
+			if 'Motion:Sensor' in device['model']:
 				if sensor in 'BinarySensor:hdm': sensor = 'alarm'
 				if sensor in '#MultilevelSensor(1)': sensor = 'temperature'
 				if sensor in '#MultilevelSensor(3)': sensor = 'light'
-			if device['model'] in 'Wall:Plug:Switch:and:Meter':
-				if sensor in 'Meter:hdm': sensor = 'consumption'
+			if 'Meter:hdm' in sensor: sensor = 'consumption'
 
 			sensorData = {'sensor': sensor}
 			countValues = len(values)
-			for i in xrange(countValues):
+			for i in range(countValues):
 				timeOfDay = strftime('%H:%M:%S', gmtime(float(timesOfDay[i])))
 				sensorData[timeOfDay] = values[i]
 
@@ -393,16 +392,18 @@ class pyDHC():
 		datasArray[yesterday] = {}
 
 		for device in self._AllDevices:
-			if device['model'] in self._MeteringDevices:
-				name = device['name']
-				datas = self.getDailyStat(device, 1)
-				datas = datas['result'][0]
-				total = 0
-				for date, value in datas.items():
-					if date == 'sensor': continue
-					total += float(value)
-				total = str(total/1000)+'kWh'
-				datasArray[yesterday][name] = total
+			sensors = device['sensors']
+			for sensor in sensors:
+				if 'Meter:hdm' in sensor:
+					name = device['name']
+					datas = self.getDailyStat(device, 1)
+					datas = datas['result'][0]
+					total = 0
+					for date, value in datas.items():
+						if date == 'sensor': continue
+						total += float(value)
+					total = str(total/1000)+'kWh'
+					datasArray[yesterday][name] = total
 
 		#add yesterday sums to previously loaded datas:
 		prevDatas[yesterday] = datasArray[yesterday]
@@ -435,7 +436,7 @@ class pyDHC():
 			dateEnd = datetime.datetime.strptime(dateEnd, '%d.%m.%Y')
 
 			sumArray = {}
-			for i in xrange(len(prevDatas)):
+			for i in range(len(prevDatas)):
 				thisDate = keys[i]
 				data = prevDatas[thisDate]
 				thisDate = datetime.datetime.strptime(thisDate, '%d.%m.%Y')
@@ -907,7 +908,7 @@ class pyDHC():
 
 	#functions authorization=============================================
 	def __init__(self, login='', password='', gateIdx=0):
-		self._version = 1.3
+		self._version = 1.31
 		self.error = None
 		self._userInfos = None
 		self._centralInfos = None
@@ -955,11 +956,9 @@ class pyDHC():
 		"""
 		UNTESTED:
 			devolo.model.Dimmer / Dimmer
-			devolo.model.Relay / Relay
 			HueBulbSwitch / HueBulbSwitch
 			HueBulbColor / HueBulbColor
 		"""
-		self._MeteringDevices     = ['devolo.model.Wall:Plug:Switch:and:Meter', 'devolo.model.Shutter', 'devolo.model.Dimmer', 'devolo.model.Relay'] #devices for consumption loging !
 		#Sensors Operations:
 		self._SensorsOnOff        = ['BinarySwitch', 'BinarySensor', 'HueBulbSwitch', 'Relay'] #supported sensor types for 'turnOn'/'turnOff' operation
 		self._SensorsSendValue    = ['MultiLevelSwitch', 'SirenMultiLevelSwitch', 'Blinds', 'Dimmer'] #supported sensor types for 'sendValue' operation
